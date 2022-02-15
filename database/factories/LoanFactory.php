@@ -18,10 +18,16 @@ class LoanFactory extends Factory
      */
     public function definition()
     {
+
+        $loan_term = $this->faker->randomDigit();
+        $loan_amount = $this->faker->numberBetween($min = 1000, $max = 9000);
         return [
             'user_id' => User::factory(),
-            'loan_term' => 5,
-            'amount_required' => 10000,
+            'loan_term' => $loan_term,
+            'loan_term_remaining' => $loan_term,
+            'amount_required' => $loan_amount,
+            'amount_balance' => $loan_amount,
+            'loan_start_date' => $this->faker->date($format = 'Y-m-d')
         ];
     }
 }

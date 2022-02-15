@@ -18,16 +18,18 @@ class UserController extends Controller
         print($user);
     }
 
-    function get_user_by_id(int $id) {
-        return User::find($id);
+    static function get_user_by_id(int $user_id) {
+        $user = User::find($user_id);
+        if ($user) {
+            return $user;
+        } else {
+            $format = 'There is no User with user_id %d. ';
+            echo sprintf($format, $user_id);
+            exit();
+        }
     }
 
-    function get_all_users() {
+    static function get_all_users() {
         return User::all();
-    }
-
-    function get_loans_by_userid(int $id) {
-        $user = User::find($id);
-        return $user->loans();
     }
 }

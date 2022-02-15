@@ -17,9 +17,11 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->integer('loan_term');
+            $table->integer('loan_term_remaining');
             $table->decimal('amount_required');
+            $table->decimal('amount_balance');
+            $table->date('loan_start_date');
             $table->timestamp('approved_at')->nullable();
-            $table->timestamps('');
             $table->enum('status', ['Pending', 'Approved', 'Paid'])->default('Pending');
         });
     }

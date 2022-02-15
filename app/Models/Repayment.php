@@ -16,11 +16,21 @@ class Repayment extends Model
      */
     protected $fillable = [
         'loan_id',
-        'amount_paid',
+        'amount',
     ];
 
     public function loan() {
         return $this->belongsTo(Loan::class);
+    }
+
+    public function scopeBelongs_to($query, $loan_id)
+    {
+        return $query->where('loan_id', $loan_id);
+    }
+
+    public function scopePending($query)
+    {
+        return $query->where('status', 'Pending');
     }
 
     public $timestamps = false;

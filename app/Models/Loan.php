@@ -17,7 +17,9 @@ class Loan extends Model
     protected $fillable = [
         'user_id',
         'loan_term',
+        'loan_term_remaining',
         'amount_required',
+        'amount_balance',
     ];
 
     public function user() {
@@ -28,5 +30,10 @@ class Loan extends Model
         return $this->hasMany(Repayment::class);
     }
 
+    public function scopeBelongs_to($query, $user_id)
+    {
+        return $query->where('user_id', $user_id);
+    }
 
+    public $timestamps = false;
 }
