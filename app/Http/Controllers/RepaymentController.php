@@ -20,24 +20,29 @@ class RepaymentController extends Controller
                 echo ("Loan has already been paid. ");
             } else {
                 if ($request->amount > $loan->amount_balance) {
-                    echo ("Repayment is more than Loan Amount. Please input a lower Repayment Amount. ");
+                    echo ("Repayment is more than payable Amount. Please input a lower Repayment Amount. ");
                     exit();
                 }
                 $repayments = Repayment::pending()->belongs_to($request->loan_id)->get(); //get all pending repayments
                 $repayment_amended = $repayments->first();
+                if (!$repayment_amended) {
+                    echo("There are no repayments to be made. ");
+                    exit();
+                }
                 $amount_paid = $request->amount;
                 if ($amount_paid < $repayment_amended->amount) {
-                    echo("Repayment is less than Repayment Amount. Please input a higher Repayment Amount. ");
+                    echo("Repayment is less than payable Amount. Please input a higher Repayment Amount. ");
                     exit();
                 }
                 $repayment_amended->status = 'Paid';
+                $repayment_amended->amount = $amount_paid;
                 $repayment_amended->save();
 
                 $loan->loan_term_remaining--;
                 $loan->amount_balance = $loan->amount_balance - $amount_paid;
                 if ($loan->loan_term_remaining > 0) {
-                    $scheduled_repayment = round(($loan->amount_balance / $loan->loan_term_remaining));
-                    $repayments->skip(1)->each(function ($repayment, $key, $scheduled_repayment) { //SOLVE SCHEDULED REPAYMENT PROBLEM, NEED SKIP THE FIRST ONE
+                    $scheduled_repayment = floor(($loan->amount_balance * 100/ $loan->loan_term_remaining)) / 100;
+                    $repayments->skip(1)->each(function ($repayment, $key) use($scheduled_repayment) {
                         $repayment->amount = $scheduled_repayment;
                         $repayment->save();
                     });

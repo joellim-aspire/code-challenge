@@ -21,10 +21,14 @@ class LoanController extends Controller
             $loan->loan_term_remaining = $request->loan_term;
             $loan->amount_required = $request->amount_required;
             $loan->amount_balance = $request->amount_required;
-            $loan->loan_start_date = Carbon::now()->toDateString(); // how to change to allow user to input loan date?
+            $loan->loan_start_date = $request->loan_start_date; // how to change to allow user to input loan date?
+            if ($loan->loan_start_date < Carbon::now()) {
+                echo ("Loan Start Date is before current Date. Please re-select. ");
+                exit();
+            }
             $loan->save();
             // generate scheduled repayments based on loan term and amount when loan is being created
-            $scheduled_repayment = round(($request->amount_required / $request->loan_term), 2);
+            $scheduled_repayment = floor(($request->amount_required * 100/ $request->loan_term)) / 100;
             $start_date = $loan->loan_start_date;
             $repayment_date = date('Y-m-d', strtotime($start_date. ' + 7 days'));
             for ($count = 0; $count < ($loan->loan_term)-1; $count++) {
