@@ -5,69 +5,95 @@ namespace App\Http\Controllers;
 use App\Models\Loan;
 use App\Models\User;
 use App\Models\Repayment;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 
 class RepaymentController extends Controller
 {
-    function create_repayment(Request $request) {
-        $loan = LoanController::get_loan_by_id($request->loan_id); // check if loan_id is valid first
-        if ($loan) {
-            if ($loan->status == 'Pending') {
-                echo ("Loan is still pending. ");
-            } elseif ($loan->status == 'Paid') {
-                echo ("Loan has already been paid. ");
-            } else {
-                if ($request->amount > $loan->amount_balance) {
-                    echo ("Repayment is more than payable Amount. Please input a lower Repayment Amount. ");
-                    exit();
-                }
-                $repayments = Repayment::pending()->belongs_to($request->loan_id)->get(); //get all pending repayments
-                $repayment_amended = $repayments->first();
-                if (!$repayment_amended) {
-                    echo("There are no repayments to be made. ");
-                    exit();
-                }
-                $amount_paid = $request->amount;
-                if ($amount_paid < $repayment_amended->amount) {
-                    echo("Repayment is less than payable Amount. Please input a higher Repayment Amount. ");
-                    exit();
-                }
-                $repayment_amended->status = 'Paid';
-                $repayment_amended->amount = $amount_paid;
-                $repayment_amended->save();
+    function createRepayment(Request $request, int $loan_id) {
+        $loan = LoanController::get_loan_by_id($loan_id); // check if loan_id is valid first
 
-                $loan->loan_term_remaining--;
-                $loan->amount_balance = $loan->amount_balance - $amount_paid;
-                if ($loan->loan_term_remaining > 0) {
-                    $scheduled_repayment = floor(($loan->amount_balance * 100/ $loan->loan_term_remaining)) / 100;
-                    $repayments->skip(1)->each(function ($repayment, $key) use($scheduled_repayment) {
-                        $repayment->amount = $scheduled_repayment;
-                        $repayment->save();
-                    });
-                } else {
-                    $loan->status = 'Paid';
-                }
-                $loan->save();
-                return ($repayment_amended);
-            }
+        if ($loan->status == 'Pending') {
+            return response([
+                'message' => 'Loan is still pending.'
+            ], 200);
         }
+        if ($loan->status == 'Paid') {
+            return response([
+                'message' => 'Loan has been paid.'
+            ], 200);
+        }
+
+        if ($request->amount > $loan->amount_balance) {
+            return response([
+                'message' => 'Repayment is more than payable Amount. Please input a lower Repayment Amount.'
+            ], 200);
+        }
+
+        $repayments = Repayment::pending()->belongs_to($loan_id)->get(); //get all pending repayments
+        $repayment_amended = $repayments->first(); //get first pending repayment
+        $amount_paid = $request->amount;
+
+        if ($amount_paid < $repayment_amended->amount) {
+            return response([
+                'message' => 'Repayment is less than payable Amount. Please input a higher Repayment Amount.'
+            ], 200);
+        }
+
+        $repayment_amended->status = 'Paid';
+        $repayment_amended->amount = $amount_paid;
+        $repayment_amended->save();
+
+        $loan->loan_term_remaining--;
+        $loan->amount_balance = $loan->amount_balance - $amount_paid;
+        if ($loan->loan_term_remaining == 0) {
+            $loan->status = 'Paid';
+            return response([
+                'message' => 'All repayments have been paid. Loan has been paid.'
+            ], 200);
+        }
+
+        $scheduled_repayment = floor(($loan->amount_balance * 100/ $loan->loan_term_remaining)) / 100;
+        $repayments->skip(1)->each(function ($repayment) use($scheduled_repayment) {
+            $repayment->amount = $scheduled_repayment;
+            $repayment->save();
+        });
+        $loan->save();
+
+        return response([
+            'repayment_amended' => $repayment_amended,
+            'message' => 'The scheduled repayment has been paid.'
+        ], 200);
     }
 
-    static function get_repayment_by_id(int $loan_id) {
-        return Repayment::find($loan_id);
+    static function viewOwnRepaymentsByLoanId(Request $request, int $loan_id): Response {
+        $user = $request->user();
+        $loans = Loan::belongs_to($user->id)->orderByDesc('id')->get();
+        $loan = LoanController::get_loan_by_id($loan_id);
+
+        if (!$loans->contains($loan)) {
+            return response([
+                'message' => 'You do not have a loan containing that Loan_ID.'
+            ], 200);
+        }
+
+        return response([
+            'loan' => $loan
+        ], 200);
     }
 
-    static function get_all_repayments() {
+    static function getAllRepayments(): Collection {
         return Repayment::all();
     }
 
-    function get_repayments_by_loanid(int $loan_id) {
-        $loan = LoanController::get_loan_by_id($loan_id);
-        if ($loan) {
-            $repayments = Repayment::belongs_to($loan_id)->orderBy('id')->get();
-            return $repayments;
-        }
-    }
+//    function get_repayments_by_loanid(int $loan_id) {
+//        $loan = LoanController::get_loan_by_id($loan_id);
+//        if ($loan) {
+//            $repayments = Repayment::belongs_to($loan_id)->orderBy('id')->get();
+//            return $repayments;
+//        }
+//    }
 }

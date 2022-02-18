@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\LoanController;
 use App\Http\Controllers\RepaymentController;
+use App\Http\Controllers\AuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,22 +18,50 @@ use App\Http\Controllers\RepaymentController;
 |
 */
 
-//User Routes
-Route::post('/users/create', [UserController::class, 'create_user']);
-Route::get('/users', [UserController::class, 'get_all_users']);
-Route::get('/user/{user_id}', [UserController::class, 'get_user_by_id']);
+// User Routes
+// Protected
+Route::group(['middleware' => ['auth:sanctum', 'abilities:loan-approve']], function() { //admin only
+    Route::get('/users', [UserController::class, 'getAllUsers']);
+    Route::get('/users/{user_id}', [UserController::class, 'getUserById']);
 
-//Loan Routes
-Route::post('/loans/create', [LoanController::class, 'create_loan']);
-Route::get('/loans', [LoanController::class, 'get_all_loans']);
-Route::get('/loan/{id}', [LoanController::class, 'get_loan_by_id']);
-Route::post('/loan/approve/{id}', [LoanController::class, 'approve_loan_by_id']);
-Route::get('/loans/user/{user_id}', [LoanController::class, 'get_loans_by_userid']);
+});
 
-//Repayment Routes
-Route::post('/repayments/create', [RepaymentController::class, 'create_repayment']);
-Route::get('/repayments', [RepaymentController::class, 'get_all_repayments']);
-Route::get('/repayment/{id}', [RepaymentController::class, 'get_repayment_by_id']);
-Route::get('/repayments/loan/{loan_id}', [RepaymentController::class, 'get_repayments_by_loanid']);
+
+// Loan Routes
+// Protected
+Route::group(['middleware' => ['auth:sanctum', 'abilities:loan-approve']], function() { //admin only
+    Route::post('/loan/approve/{loan_id}', [LoanController::class, 'approveLoanById']);
+    Route::get('/loans', [LoanController::class, 'getAllLoans']);
+});
+
+Route::group(['middleware' => ['auth:sanctum', 'abilities:loan-create']], function() {
+    Route::get('/loans/user', [LoanController::class, 'viewOwnLoans']);
+    Route::post('/loans/create', [LoanController::class, 'createLoan']);
+});
+// Public
+
+
+// Repayment Routes
+// Protected
+Route::group(['middleware' => ['auth:sanctum', 'abilities:loan-approve']], function() { //admin only
+    Route::get('/repayments', [RepaymentController::class, 'getAllRepayments']);
+});
+
+Route::group(['middleware' => ['auth:sanctum', 'abilities:loan-create']], function() {
+    Route::post('/repayments/create/{loan_id}', [RepaymentController::class, 'createRepayment']);
+    Route::get('/repayments/loan/{loan_id}', [RepaymentController::class, 'viewOwnRepaymentsByLoanId']);
+});
+// Public
+
+
+// Auth Routes
+// Protected
+Route::group(['middleware' => ['auth:sanctum']], function() {
+    Route::post('/logout', [AuthController::class, 'logout']);
+});
+// Public
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+
 
 

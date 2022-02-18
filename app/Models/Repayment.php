@@ -28,6 +28,7 @@ class Repayment extends Model
         return $query->where('loan_id', $loan_id);
     }
 
+
     public function scopePending($query)
     {
         return $query->where('status', 'Pending');

@@ -3,33 +3,29 @@
 namespace App\Http\Controllers;
 
 use App\Models\Loan;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Http\Response;
 
 class UserController extends Controller
 {
-    function create_user(Request $request) {
-        $user = new User();
-        $user->username = $request->username;
-        $user->password = Hash::make($request->password);
-        $user->isAdmin = $request->isAdmin;
-        $user->save();
-        print($user);
-    }
-
-    static function get_user_by_id(int $user_id) {
+    static function getUserById(int $user_id): Response {
         $user = User::find($user_id);
         if ($user) {
-            return $user;
+            return response([
+                'message' => 'User has been found.',
+                'user' => $user
+            ], 200);
         } else {
-            $format = 'There is no User with user_id %d. ';
-            echo sprintf($format, $user_id);
-            exit();
+            return response([
+                'message' => 'User does not exist.'
+            ], 200);
         }
     }
 
-    static function get_all_users() {
+    static function getAllUsers(): Collection {
         return User::all();
     }
 }
