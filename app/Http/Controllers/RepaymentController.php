@@ -14,13 +14,20 @@ use Illuminate\Support\Facades\Hash;
 class RepaymentController extends Controller
 {
     function createRepayment(Request $request, int $loan_id) {
-        $loan = LoanController::get_loan_by_id($loan_id); // check if loan_id is valid first
+        $loan = Loan::find($loan_id); // check if loan_id is valid first
+
+        if (!$loan) {
+            return response([
+                'message' => 'Loan does not exist.'
+            ], 200);
+        }
 
         if ($loan->status == 'Pending') {
             return response([
                 'message' => 'Loan is still pending.'
             ], 200);
         }
+
         if ($loan->status == 'Paid') {
             return response([
                 'message' => 'Loan has been paid.'
@@ -29,7 +36,7 @@ class RepaymentController extends Controller
 
         if ($request->amount > $loan->amount_balance) {
             return response([
-                'message' => 'Repayment is more than payable Amount. Please input a lower Repayment Amount.'
+                'message' => 'Repayment is more than Loan Balance. Please input a lower Repayment Amount.'
             ], 200);
         }
 

@@ -30,8 +30,8 @@ Route::group(['middleware' => ['auth:sanctum', 'abilities:loan-approve']], funct
 // Loan Routes
 // Protected
 Route::group(['middleware' => ['auth:sanctum', 'abilities:loan-approve']], function() { //admin only
-    Route::post('/loan/approve/{loan_id}', [LoanController::class, 'approveLoanById']);
     Route::get('/loans', [LoanController::class, 'getAllLoans']);
+    Route::post('/loan/approve/{loan_id}', [LoanController::class, 'approveLoanById']);
 });
 
 Route::group(['middleware' => ['auth:sanctum', 'abilities:loan-create']], function() {
