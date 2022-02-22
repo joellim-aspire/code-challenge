@@ -34,15 +34,15 @@ class RepaymentController extends Controller
             ], 200);
         }
 
-        if ($request->amount > $loan->amount_balance) {
+        $repayments = Repayment::pending()->belongs_to($loan_id)->get(); //get all pending repayments
+        $repayment_amended = $repayments->first(); //get first pending repayment
+        $amount_paid = $request->amount;
+
+        if ($amount_paid > $loan->amount_balance) {
             return response([
                 'message' => 'Repayment is more than Loan Balance. Please input a lower Repayment Amount.'
             ], 200);
         }
-
-        $repayments = Repayment::pending()->belongs_to($loan_id)->get(); //get all pending repayments
-        $repayment_amended = $repayments->first(); //get first pending repayment
-        $amount_paid = $request->amount;
 
         if ($amount_paid < $repayment_amended->amount) {
             return response([
@@ -56,19 +56,25 @@ class RepaymentController extends Controller
 
         $loan->loan_term_remaining--;
         $loan->amount_balance = $loan->amount_balance - $amount_paid;
+        $loan->save();
+        echo("Here1");
         if ($loan->loan_term_remaining == 0) {
+            echo("Here2");
             $loan->status = 'Paid';
+            echo("Here3");
+            $loan->save();
+            echo("Here4");
             return response([
                 'message' => 'All repayments have been paid. Loan has been paid.'
             ], 200);
         }
-
+        echo("Here5");
         $scheduled_repayment = floor(($loan->amount_balance * 100/ $loan->loan_term_remaining)) / 100;
         $repayments->skip(1)->each(function ($repayment) use($scheduled_repayment) {
             $repayment->amount = $scheduled_repayment;
             $repayment->save();
         });
-        $loan->save();
+        echo("Here6");
 
         return response([
             'repayment_amended' => $repayment_amended,
